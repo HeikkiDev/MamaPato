@@ -44,12 +44,13 @@ public class ColocarVegetacion : MonoBehaviour
     public void Iniciar()
     {   
         vertices = terreno.vertices;
-        CrearPaisaje(arboles);
-        CrearPaisaje(arbustos);
-        CrearPaisaje(esparto);
-        CrearPaisaje(rocas);
+        // Árboles, arbustos y flores se pueden atravesar para que los patos no se atasquen; las rocas siguen siendo sólidas
+        CrearPaisaje(arboles, false);
+        CrearPaisaje(arbustos, false);
+        CrearPaisaje(esparto, false);
+        CrearPaisaje(rocas, true);
     }
-    private void CrearPaisaje(Paisajes paisajes)
+    private void CrearPaisaje(Paisajes paisajes, bool solido)
     {   
         GameObject contenedorPaisaje = new GameObject(paisajes.nombre);
         contenedorPaisaje.transform.parent = gameObject.transform;
@@ -83,6 +84,9 @@ public class ColocarVegetacion : MonoBehaviour
                         GameObject paisajePrefab = Instantiate(especie, insercion, rotacion);
                         paisajePrefab.transform.localScale = GetRandomScale(paisajePrefab.transform.localScale, paisajes.variacion);
                         paisajePrefab.transform.parent = contenedorPaisaje.transform;
+                        if (!solido)
+                            foreach (Collider colisionador in paisajePrefab.GetComponentsInChildren<Collider>())
+                                Destroy(colisionador);
                     }
                 }
             }
