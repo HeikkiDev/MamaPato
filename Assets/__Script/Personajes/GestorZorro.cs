@@ -11,14 +11,6 @@ public class GestorZorro : MonoBehaviour
     public float percepcionMatar;
     [Range(0.2f, 2.0f)]
     public float tol;
-    [Range(0.5f, 10.0f)]
-    public float radioIntimidacion;
-    [Tooltip("Distancia a la que mama pato intimida al zorro si lo mira de frente")]
-    [Range(0.5f, 10.0f)]
-    public float distanciaIntimidacionFrontal = 4f;
-    [Tooltip("Ángulo total (grados) del cono de visión de mama pato que intimida")]
-    [Range(10f, 180f)]
-    public float anguloIntimidacion = 90f;
     [Tooltip("Velocidad a la que huye el zorro intimidado")]
     public float velocidadHuida = 3f;
     [Range(0.05f, 0.3f)]
@@ -34,6 +26,8 @@ public class GestorZorro : MonoBehaviour
     public float accionVertical;
     public float accionHorizontal;
     Rigidbody zorroRigidbody;
+    Collider zorroCollider;
+    Collider mamaCollider;
     public GameObject patitoMasCercano;
 
     public float changeDirectionInterval = 1f;
@@ -52,7 +46,9 @@ public class GestorZorro : MonoBehaviour
     {
         gestorAnimaciones = GetComponent<GestorAnimaciones>();
         zorroRigidbody = GetComponent<Rigidbody>();
-        Physics.IgnoreCollision(jugador.GetComponent<Collider>(), GetComponent<Collider>());
+        zorroCollider = GetComponent<Collider>();
+        mamaCollider = jugador.GetComponent<Collider>();
+        Physics.IgnoreCollision(mamaCollider, zorroCollider);
     }
 
     private void GestionarAccionMovimiento()
@@ -120,19 +116,13 @@ public class GestorZorro : MonoBehaviour
         GestionarAccionMovimiento();
     }
 
-    // Muy cerca de mama pato, o dentro de su campo de visión frontal
+    // Mama pato choca con el zorro (las colisiones físicas entre ambos están desactivadas, así que se comprueba el solapamiento)
     bool EstaIntimidado()
     {
-        Vector3 haciaZorro = transform.position - jugador.transform.position;
-        haciaZorro.y = 0;
-        float distancia = haciaZorro.magnitude;
-        if (distancia < radioIntimidacion)
-            return true;
-
-        Vector3 frenteMama = jugador.transform.forward;
-        frenteMama.y = 0;
-        return distancia < distanciaIntimidacionFrontal
-            && Vector3.Angle(frenteMama, haciaZorro) < anguloIntimidacion * 0.5f;
+        return Physics.ComputePenetration(
+            zorroCollider, zorroCollider.transform.position, zorroCollider.transform.rotation,
+            mamaCollider, mamaCollider.transform.position, mamaCollider.transform.rotation,
+            out _, out _);
     }
 
     // Corre en dirección contraria a mama pato mientras dura el aturdimiento

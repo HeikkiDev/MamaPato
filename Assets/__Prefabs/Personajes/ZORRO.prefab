@@ -166,7 +166,6 @@ MonoBehaviour:
   percepcion: 3
   percepcionMatar: 2.5
   tol: 0.25
-  radioIntimidacion: 0.5
   acel: 0.05
   x: 0
   y: 0
