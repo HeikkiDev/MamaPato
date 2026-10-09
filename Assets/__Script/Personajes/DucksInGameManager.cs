@@ -18,6 +18,7 @@ public class DucksInGameManager : MonoBehaviour
         public bool IsHeadOfMainQueue { get; set; }
         public bool IsHeadOfOrphanQueue { get; set; }
 
+        public float OrphanedAt { get; set; } // Time.time al quedar huérfano
         public Guid OrphanQueueUniqueId { get; set; } // Id de la orphan queue, para que sea más eficiente acceder a ella en el array de orphan queues
 
         public Duck DuckAheadOfYou { get; set; } // el pato delante de ti en la cola, al que tienes que seguir!
@@ -55,8 +56,10 @@ public class DucksInGameManager : MonoBehaviour
     private int terrainMask;
     private readonly List<GameObject> enemies = new();
 
+    // Tras un ataque, la fila huérfana no puede reunirse con la principal durante este tiempo
+    public const float SegundosEsperaHuerfanos = 3f;
+
     public static DucksInGameManager Instance { get; private set; }
-    public bool MatandoPatitos { get; set; }
 
     private void Awake()
     {
@@ -184,6 +187,7 @@ public class DucksInGameManager : MonoBehaviour
         foreach (var orphan in newOrphanQueue)
         {
             orphan.OrphanQueueUniqueId = newOrphanList.UniqueId;
+            orphan.OrphanedAt = Time.time;
             orphan.IsInMainQueue = false;
             orphan.IsInOrphanQueue = true;
             orphan.IsHeadOfMainQueue = false;
@@ -207,9 +211,6 @@ public class DucksInGameManager : MonoBehaviour
 
     public void RemoveChildFromMainQueue(Duck child)
     {
-        MatandoPatitos = true;
-        StartCoroutine(ResetMatandoPatitos());
-
         int index = MainQueue.DucksList.FindIndex(x => x.UniqueId == child.UniqueId);
         if (index < 0)
             return;
@@ -230,9 +231,6 @@ public class DucksInGameManager : MonoBehaviour
 
     public void RemoveChildFromOrphanQueue(Duck child)
     {
-        MatandoPatitos = true;
-        StartCoroutine(ResetMatandoPatitos());
-
         var orphanQueue = OrphanQueues.FirstOrDefault(x => x.UniqueId == child.OrphanQueueUniqueId);
         if (orphanQueue == null)
             return;
@@ -317,12 +315,5 @@ public class DucksInGameManager : MonoBehaviour
 
             yield return new WaitForSeconds(EnemySpawnIntervalInSeconds);
         }
-    }
-
-    private IEnumerator ResetMatandoPatitos()
-    {
-        yield return new WaitForSeconds(3);
-
-        MatandoPatitos = false;
     }
 }

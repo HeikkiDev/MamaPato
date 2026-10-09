@@ -13,6 +13,14 @@ public class GestorZorro : MonoBehaviour
     public float tol;
     [Range(0.5f, 10.0f)]
     public float radioIntimidacion;
+    [Tooltip("Distancia a la que mama pato intimida al zorro si lo mira de frente")]
+    [Range(0.5f, 10.0f)]
+    public float distanciaIntimidacionFrontal = 4f;
+    [Tooltip("Ángulo total (grados) del cono de visión de mama pato que intimida")]
+    [Range(10f, 180f)]
+    public float anguloIntimidacion = 90f;
+    [Tooltip("Velocidad a la que huye el zorro intimidado")]
+    public float velocidadHuida = 3f;
     [Range(0.05f, 0.3f)]
     public float acel;
     public float x, y, tx, ty, jx, jy, dx, dy, mx, my;
@@ -57,23 +65,24 @@ public class GestorZorro : MonoBehaviour
     
     private void FixedUpdate()
     {
-        if (IsStunt || jugador == null)
+        if (jugador == null)
             return;
+
+        if (IsStunt)
+        {
+            HuirDeMamaPato();
+            return;
+        }
 
         EncontrarPatitoMasCercano();
         MatarPatitoMasCercano();
 
-        jx = jugador.transform.position[0];
-        jy = jugador.transform.position[2];
         x = gameObject.transform.position[0];
         y = gameObject.transform.position[2];
-        dx = x - jx;
-        dy = y - jy;
-        if (Mathf.Sqrt(dx*dx+dy*dy) < radioIntimidacion )
+        if (EstaIntimidado())
         {
-            // Intimidado por mama pato
-            patitoMasCercano = null; // corta el ataque
-            gestorAnimaciones.IniciarAnimacion("Intimidar_anim", true); // TODO: No funciona la anim por ahora
+            // Intimidado por mama pato: abandona el ataque y huye
+            patitoMasCercano = null;
             if (killCoroutine != null)
             {
                 StopCoroutine(killCoroutine);
@@ -81,10 +90,10 @@ public class GestorZorro : MonoBehaviour
             }
             IsKilling = false;
             IsStunt = true;
+            gestorAnimaciones.IniciarAnimacion("Empty", false); // corta la animación de ataque
             StartCoroutine(ResetStuntInSeconds(4));
-
-            mx = x - jx;
-            my = y - jy;
+            HuirDeMamaPato();
+            return;
         }
         else if (patitoMasCercano != null)
         {
@@ -103,7 +112,7 @@ public class GestorZorro : MonoBehaviour
             return;
         }
 
-        zorroRigidbody.velocity = new Vector3(dx*velocidad, 0, dy*velocidad);
+        zorroRigidbody.velocity = new Vector3(dx*velocidad, zorroRigidbody.velocity.y, dy*velocidad);
         giro = Mathf.Asin(my/(Mathf.Sqrt(mx*mx+my*my)+0.0000001f));
         if (mx > 0) {giro = Mathf.PI - giro;};
         gameObject.transform.localRotation = Quaternion.Euler(0, 90 + 180*giro/Mathf.PI, 0);
@@ -111,12 +120,43 @@ public class GestorZorro : MonoBehaviour
         GestionarAccionMovimiento();
     }
 
+    // Muy cerca de mama pato, o dentro de su campo de visión frontal
+    bool EstaIntimidado()
+    {
+        Vector3 haciaZorro = transform.position - jugador.transform.position;
+        haciaZorro.y = 0;
+        float distancia = haciaZorro.magnitude;
+        if (distancia < radioIntimidacion)
+            return true;
+
+        Vector3 frenteMama = jugador.transform.forward;
+        frenteMama.y = 0;
+        return distancia < distanciaIntimidacionFrontal
+            && Vector3.Angle(frenteMama, haciaZorro) < anguloIntimidacion * 0.5f;
+    }
+
+    // Corre en dirección contraria a mama pato mientras dura el aturdimiento
+    void HuirDeMamaPato()
+    {
+        Vector3 huida = transform.position - jugador.transform.position;
+        huida.y = 0;
+        huida = huida.sqrMagnitude > 0.0001f ? huida.normalized : transform.forward;
+
+        transform.rotation = Quaternion.LookRotation(huida);
+        Vector3 velocidadHuir = huida * velocidadHuida;
+        velocidadHuir.y = zorroRigidbody.velocity.y;
+        zorroRigidbody.velocity = velocidadHuir;
+
+        accionMovimiento = new Vector2(huida.x, huida.z);
+        gestorAnimaciones.ActualizarValoresAnimacion(0, 1); // animación de correr
+    }
+
 
     void MoverZorroAleatoriamente()
     {
         dy = Mathf.Cos(Mathf.PI * gameObject.transform.localRotation.eulerAngles.y / 180);
         dx = Mathf.Sin(Mathf.PI * gameObject.transform.localRotation.eulerAngles.y / 180);
-        zorroRigidbody.velocity = new Vector3(dx * 2, 0, dy * 2);
+        zorroRigidbody.velocity = new Vector3(dx * 2, zorroRigidbody.velocity.y, dy * 2);
         accionMovimiento = new Vector2(dx, dy);
         GestionarAccionMovimiento();
     }

@@ -18,6 +18,9 @@ public class PatoLocomocion : MonoBehaviour
     public LayerMask terreno;
     [Tooltip("Distancia máxima del SphereCast de suelo (8 = valor efectivo que se usaba antes)")]
     public float distanciaSuelo = 8f;
+    [Tooltip("Por debajo de esta distancia al suelo, el movimiento sigue la pendiente del terreno")]
+    public float distanciaPegarSuelo = 0.3f;
+    const float AlturaRayoPendiente = 0.5f;
 
     public float velocidadMovimiento = 5;
     public float velocidadRotacion = 15;
@@ -35,12 +38,23 @@ public class PatoLocomocion : MonoBehaviour
     {
         direccionMovimiento = cameraObject.forward * gestorAcciones.accionVertical;
         direccionMovimiento = direccionMovimiento + cameraObject.right * gestorAcciones.accionHorizontal;
-        direccionMovimiento.Normalize();
         direccionMovimiento.y = 0;
-        direccionMovimiento *= velocidadMovimiento;
+        direccionMovimiento.Normalize();
 
-        Vector3 movimientoVelocidad = direccionMovimiento;
-        patoRigidbody.velocity = movimientoVelocidad;
+        Vector3 velocidad;
+        Vector3 origenRayo = transform.position + Vector3.up * AlturaRayoPendiente;
+        if (Physics.Raycast(origenRayo, Vector3.down, out RaycastHit suelo, AlturaRayoPendiente + distanciaPegarSuelo, terreno))
+        {
+            // Avanza paralela a la pendiente: sube y baja colinas a velocidad constante
+            velocidad = Vector3.ProjectOnPlane(direccionMovimiento, suelo.normal).normalized * velocidadMovimiento;
+        }
+        else
+        {
+            // En el aire conserva la velocidad vertical para que actúe la gravedad
+            velocidad = direccionMovimiento * velocidadMovimiento;
+            velocidad.y = patoRigidbody.velocity.y;
+        }
+        patoRigidbody.velocity = velocidad;
     }
     
     private void GestionarRotacion()

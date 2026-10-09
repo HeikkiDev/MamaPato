@@ -72,14 +72,19 @@ public class GestorPatito : MonoBehaviour
 
     private void FixedUpdate()
     {
+        bool esHuerfano = PatitoInfo != null && PatitoInfo.IsInOrphanQueue;
+
         if (jugador == null)
         {
             accionMovimiento = Vector2.zero;
             GestionarAccionMovimiento();
-            if (!DucksInGameManager.Instance.MatandoPatitos)
-                EncontrarUltimoPatitoDeLaFila();
+            BuscarFilaPrincipal();
             return;
         }
+
+        // Cualquier patito de una fila huérfana (no solo el primero) puede devolverla a la fila principal
+        if (esHuerfano)
+            BuscarFilaPrincipal();
 
         tx = jugador.transform.position[0];
         ty = jugador.transform.position[2];
@@ -103,7 +108,7 @@ public class GestorPatito : MonoBehaviour
             mx = x - tx;
             my = y - ty;
         }
-        patitoRigidbody.velocity = new Vector3(-dx*velocidad, 0, -dy*velocidad);
+        patitoRigidbody.velocity = new Vector3(-dx*velocidad, patitoRigidbody.velocity.y, -dy*velocidad);
         giro = Mathf.Asin(my/(Mathf.Sqrt(mx*mx+my*my)+0.0000001f));
         if (mx > 0) {giro = Mathf.PI - giro;};
         gameObject.transform.localRotation = Quaternion.Euler(0,90+180*giro/Mathf.PI,0);
@@ -111,10 +116,13 @@ public class GestorPatito : MonoBehaviour
         GestionarAccionMovimiento();
     }
 
-    void EncontrarUltimoPatitoDeLaFila()
+    void BuscarFilaPrincipal()
     {
         bool isOrphan = PatitoInfo != null && PatitoInfo.IsInOrphanQueue;
-        bool isOrphanHead = PatitoInfo != null && PatitoInfo.IsHeadOfOrphanQueue;
+
+        // Tras separarse por un ataque, la fila huérfana espera unos segundos antes de poder volver
+        if (isOrphan && Time.time - PatitoInfo.OrphanedAt < DucksInGameManager.SegundosEsperaHuerfanos)
+            return;
 
         var taggedObjects = DucksInGameManager.Instance.MainQueue.DucksList;
 
@@ -124,9 +132,9 @@ public class GestorPatito : MonoBehaviour
 
             if (distancia < percepcion)
             {
-                if (isOrphan && isOrphanHead)
+                if (isOrphan)
                     DucksInGameManager.Instance.RemoveOrphanQueueAndAddToMain(PatitoInfo.OrphanQueueUniqueId);
-                else if (!isOrphan)
+                else
                     DucksInGameManager.Instance.AddChildToMainQueue(gameObject);
 
                 //Debug.Log("PATITO SOLO ENCONTRADO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
