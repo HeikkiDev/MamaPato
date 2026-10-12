@@ -6,7 +6,7 @@
 
 Explora, reúne a tu familia y no dejes a nadie atrás.
 
-![Unity](https://img.shields.io/badge/Unity-2022.3.62f3-222222?logo=unity&logoColor=white)
+![Unity](https://img.shields.io/badge/Unity-6000.6.5f1-222222?logo=unity&logoColor=white)
 ![C#](https://img.shields.io/badge/Lenguaje-C%23-512BD4)
 ![URP](https://img.shields.io/badge/Render-URP-38761D)
 
@@ -47,14 +47,14 @@ Pero el paseo no está libre de peligros: los zorros acechan a los más pequeño
 ### Requisitos
 
 - [Unity Hub](https://unity.com/download).
-- **Unity Editor 2022.3.62f3**, la versión utilizada por el proyecto.
+- **Unity Editor 6000.6.5f1 (Unity 6.6)**, la versión utilizada por el proyecto.
 - Una copia local de este repositorio.
 
 ### Primer paseo
 
 1. Clona el repositorio o descárgalo desde **Code → Download ZIP** y descomprímelo.
 2. En Unity Hub, selecciona **Add / Añadir** y elige la carpeta que contiene `Assets`, `Packages` y `ProjectSettings`.
-3. Abre el proyecto con **Unity 2022.3.62f3** y espera a que termine la importación de los assets y paquetes.
+3. Abre el proyecto con **Unity 6000.6.5f1 (Unity 6.6)** y espera a que termine la importación de los assets y paquetes.
 4. Abre la escena [`Assets/Scenes/SampleScene.unity`](Assets/Scenes/SampleScene.unity).
 5. Pulsa **Play** y empieza a reunir a tus patitos.
 
@@ -64,7 +64,7 @@ Las dependencias están declaradas en [`Packages/manifest.json`](Packages/manife
 
 | Parte | Tecnología |
 | --- | --- |
-| Motor | Unity 2022.3 LTS |
+| Motor | Unity 6.6 |
 | Lógica | C# |
 | Renderizado | Universal Render Pipeline (URP) |
 | Entrada | Unity Input System |
