@@ -20,6 +20,8 @@ public class PatoLocomocion : MonoBehaviour
     public float distanciaSuelo = 8f;
     [Tooltip("Por debajo de esta distancia al suelo, el movimiento sigue la pendiente del terreno")]
     public float distanciaPegarSuelo = 0.3f;
+    [Tooltip("Si el suelo está más lejos que esto bajo los pies, se considera en el aire (animación de caída)")]
+    public float distanciaCaida = 0.5f;
     const float AlturaRayoPendiente = 0.5f;
 
     [Header("Salto (barra espaciadora)")]
@@ -82,6 +84,7 @@ public class PatoLocomocion : MonoBehaviour
     public void GestionarLocomocion()
     {   
         GestionarVuelo();
+        gestorAnimaciones.ActualizarEstadoAire(EnElAire(), Time.deltaTime);
         bool saltoPedido = gestorAcciones.ConsumirSalto();
         if (gestorPato.interactuando)
             return;
@@ -113,20 +116,12 @@ public class PatoLocomocion : MonoBehaviour
         origenRaycast.y += desfaseRaycast;
         if (!enTierra)
         {
-            if (!gestorPato.interactuando)
-            {
-                gestorAnimaciones.IniciarAnimacion("Fall_anim", true);
-            }
             tiempoVuelo += Time.deltaTime;
             patoRigidbody.AddForce(transform.forward*impulso);
             patoRigidbody.AddForce(-Vector3.up * gravedad * tiempoVuelo + Vector3.up*salto);
         }
         if (Physics.SphereCast(origenRaycast, 0.1f, -Vector3.up, out hit, distanciaSuelo, terreno))
         {
-            if (!enTierra)// && !gestorPato.interactuando)
-            {
-                gestorAnimaciones.IniciarAnimacion("Land_anim", true);
-            }
             tiempoVuelo = 0;
             enTierra = true;
         }
@@ -134,5 +129,13 @@ public class PatoLocomocion : MonoBehaviour
         {
             enTierra = false;
         }
+    }
+
+    private bool EnElAire()
+    {
+        if (Time.time < finDespegue)
+            return true;
+        Vector3 origenRayo = transform.position + Vector3.up * AlturaRayoPendiente;
+        return !Physics.Raycast(origenRayo, Vector3.down, AlturaRayoPendiente + distanciaCaida, terreno);
     }
 }

@@ -32,6 +32,22 @@ public class GestorZorro : MonoBehaviour
 
     public float changeDirectionInterval = 1f;
 
+    [Header("Animación")]
+    [Tooltip("Velocidad al pasear; se corresponde con la animación de caminar")]
+    public float velocidadPaseo = 2f;
+    [Tooltip("A esta velocidad (o más) se reproduce la animación de correr")]
+    public float velocidadCarrera = 3f;
+    [Tooltip("Rapidez con la que gira hacia su nuevo rumbo (sin saltos bruscos)")]
+    public float velocidadGiro = 8f;
+    [Tooltip("Probabilidad, en cada cambio de rumbo, de pararse un rato a olfatear")]
+    [Range(0f, 1f)]
+    public float probabilidadPausa = 0.2f;
+    public Vector2 duracionPausa = new Vector2(1f, 2.5f);
+
+    private float rumboPaseo;
+    private bool enPausa;
+    private bool paseando;
+
     public bool IsKilling { get; set; }
     public bool IsStunt { get; set; }
 
@@ -39,6 +55,7 @@ public class GestorZorro : MonoBehaviour
 
     void Start()
     {
+        rumboPaseo = transform.eulerAngles.y;
         StartCoroutine(CambiarDireccionZorro());
     }
 
@@ -51,12 +68,35 @@ public class GestorZorro : MonoBehaviour
         Physics.IgnoreCollision(mamaCollider, zorroCollider);
     }
 
+    // Blend tree: 0 = esperando, 0.5 = caminar, 1 = correr. Se calcula con la velocidad real
+    // para que las patas no "patinen" (antes dependía de la distancia al objetivo).
     private void GestionarAccionMovimiento()
     {
         accionVertical = accionMovimiento.y;
         accionHorizontal = accionMovimiento.x;
-        cantidadMovimiento = Mathf.Clamp01(Mathf.Abs(accionVertical)+Mathf.Abs(accionHorizontal));
+        float rapidez = accionMovimiento.magnitude;
+        if (rapidez <= velocidadPaseo)
+            cantidadMovimiento = 0.5f * rapidez / velocidadPaseo;
+        else
+            cantidadMovimiento = 0.5f + 0.5f * Mathf.Clamp01((rapidez - velocidadPaseo) / (velocidadCarrera - velocidadPaseo));
         gestorAnimaciones.ActualizarValoresAnimacion(0, cantidadMovimiento);
+    }
+
+    private void Mover(Vector3 velocidadHorizontal)
+    {
+        velocidadHorizontal.y = zorroRigidbody.velocity.y;
+        zorroRigidbody.velocity = velocidadHorizontal;
+        accionMovimiento = new Vector2(velocidadHorizontal.x, velocidadHorizontal.z);
+        GestionarAccionMovimiento();
+    }
+
+    private void GirarHacia(Vector3 direccion, float multiplicadorGiro = 1f)
+    {
+        direccion.y = 0;
+        if (direccion.sqrMagnitude < 0.0001f)
+            return;
+        Quaternion objetivo = Quaternion.LookRotation(direccion);
+        transform.rotation = Quaternion.Slerp(transform.rotation, objetivo, velocidadGiro * multiplicadorGiro * Time.deltaTime);
     }
     
     private void FixedUpdate()
@@ -66,9 +106,12 @@ public class GestorZorro : MonoBehaviour
 
         if (IsStunt)
         {
+            paseando = false;
             HuirDeMamaPato();
             return;
         }
+        bool estabaPaseando = paseando;
+        paseando = false;
 
         EncontrarPatitoMasCercano();
         MatarPatitoMasCercano();
@@ -87,6 +130,8 @@ public class GestorZorro : MonoBehaviour
             IsKilling = false;
             IsStunt = true;
             gestorAnimaciones.IniciarAnimacion("Empty", false); // corta la animación de ataque
+            if (jugador.TryGetComponent(out GestorPato gestorPato))
+                gestorPato.Espantar();
             StartCoroutine(ResetStuntInSeconds(4));
             HuirDeMamaPato();
             return;
@@ -104,16 +149,15 @@ public class GestorZorro : MonoBehaviour
         else
         {
             // Patito cercano NO encontrado
+            if (!estabaPaseando)
+                rumboPaseo = transform.eulerAngles.y; // sigue paseando desde donde mira ahora
+            paseando = true;
             MoverZorroAleatoriamente();
             return;
         }
 
-        zorroRigidbody.velocity = new Vector3(dx*velocidad, zorroRigidbody.velocity.y, dy*velocidad);
-        giro = Mathf.Asin(my/(Mathf.Sqrt(mx*mx+my*my)+0.0000001f));
-        if (mx > 0) {giro = Mathf.PI - giro;};
-        gameObject.transform.localRotation = Quaternion.Euler(0, 90 + 180*giro/Mathf.PI, 0);
-        accionMovimiento = new Vector2(0.25f*dx*velocidad,0.25f*dy*velocidad);
-        GestionarAccionMovimiento();
+        GirarHacia(new Vector3(dx, 0, dy));
+        Mover(new Vector3(dx*velocidad, 0, dy*velocidad));
     }
 
     // Mama pato choca con el zorro (las colisiones físicas entre ambos están desactivadas, así que se comprueba el solapamiento)
@@ -132,35 +176,40 @@ public class GestorZorro : MonoBehaviour
         huida.y = 0;
         huida = huida.sqrMagnitude > 0.0001f ? huida.normalized : transform.forward;
 
-        transform.rotation = Quaternion.LookRotation(huida);
-        Vector3 velocidadHuir = huida * velocidadHuida;
-        velocidadHuir.y = zorroRigidbody.velocity.y;
-        zorroRigidbody.velocity = velocidadHuir;
-
-        accionMovimiento = new Vector2(huida.x, huida.z);
-        gestorAnimaciones.ActualizarValoresAnimacion(0, 1); // animación de correr
+        // Al asustarse se da la vuelta rápido, sin teletransportar la rotación
+        GirarHacia(huida, 3f);
+        Mover(huida * velocidadHuida);
     }
 
 
     void MoverZorroAleatoriamente()
     {
-        dy = Mathf.Cos(Mathf.PI * gameObject.transform.localRotation.eulerAngles.y / 180);
-        dx = Mathf.Sin(Mathf.PI * gameObject.transform.localRotation.eulerAngles.y / 180);
-        zorroRigidbody.velocity = new Vector3(dx * 2, zorroRigidbody.velocity.y, dy * 2);
-        accionMovimiento = new Vector2(dx, dy);
-        GestionarAccionMovimiento();
+        if (enPausa)
+        {
+            Mover(Vector3.zero); // animación de esperar
+            return;
+        }
+
+        GirarHacia(Quaternion.Euler(0, rumboPaseo, 0) * Vector3.forward);
+        Mover(transform.forward * velocidadPaseo);
     }
 
     IEnumerator CambiarDireccionZorro()
     {
         while (true)
         {
-            // Gira el rumbo actual (ángulos Euler, no componentes del quaternion)
-            Vector3 euler = gameObject.transform.localEulerAngles;
-            euler.y += Random.Range(-30f, 30f);
-            gameObject.transform.localRotation = Quaternion.Euler(euler);
+            if (paseando && Random.value < probabilidadPausa)
+            {
+                enPausa = true;
+                yield return new WaitForSeconds(Random.Range(duracionPausa.x, duracionPausa.y));
+                enPausa = false;
+            }
+            else
+            {
+                // Nuevo rumbo; el giro se hace suavemente en MoverZorroAleatoriamente
+                rumboPaseo += Random.Range(-30f, 30f);
+            }
 
-            // Wait for a random amount of time
             yield return new WaitForSeconds(changeDirectionInterval);
         }
     }

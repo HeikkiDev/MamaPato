@@ -51,6 +51,7 @@ public class GestorPatito : MonoBehaviour
     private int capaTerreno;
     private const float AlturaRayoPendiente = 0.3f;
     private const float DistanciaPegarSuelo = 0.2f;
+    private const float DistanciaCaida = 0.4f;
 
     public Duck PatitoInfo { get; set; }
 
@@ -100,6 +101,9 @@ public class GestorPatito : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (gestorAnimaciones != null)
+            gestorAnimaciones.ActualizarEstadoAire(EnElAire(), Time.deltaTime);
+
         bool esHuerfano = PatitoInfo != null && PatitoInfo.IsInOrphanQueue;
 
         if (jugador == null)
@@ -205,6 +209,14 @@ public class GestorPatito : MonoBehaviour
         {
             saltoPendienteEn = -1;
         }
+    }
+
+    bool EnElAire()
+    {
+        if (Time.time < finDespegue)
+            return true;
+        Vector3 origen = transform.position + Vector3.up * AlturaRayoPendiente;
+        return !Physics.Raycast(origen, Vector3.down, AlturaRayoPendiente + DistanciaCaida, capaTerreno);
     }
 
     bool EnSuelo()
