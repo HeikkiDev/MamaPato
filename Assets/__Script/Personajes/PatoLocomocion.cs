@@ -62,9 +62,9 @@ public class PatoLocomocion : MonoBehaviour
         {
             // En el aire conserva la velocidad vertical para que actúe la gravedad
             velocidad = direccionMovimiento * velocidadMovimiento;
-            velocidad.y = patoRigidbody.velocity.y;
+            velocidad.y = patoRigidbody.linearVelocity.y;
         }
-        patoRigidbody.velocity = velocidad;
+        patoRigidbody.linearVelocity = velocidad;
     }
     
     private void GestionarRotacion()
@@ -101,9 +101,9 @@ public class PatoLocomocion : MonoBehaviour
         if (Time.time < finDespegue || !Physics.Raycast(origenRayo, Vector3.down, AlturaRayoPendiente + distanciaPegarSuelo, terreno))
             return;
 
-        Vector3 velocidad = patoRigidbody.velocity;
+        Vector3 velocidad = patoRigidbody.linearVelocity;
         velocidad.y = VelocidadSalto(alturaSalto);
-        patoRigidbody.velocity = velocidad;
+        patoRigidbody.linearVelocity = velocidad;
         finDespegue = Time.time + tiempoDespegue;
         SaltosRealizados++;
     }

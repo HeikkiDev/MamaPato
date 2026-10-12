@@ -84,8 +84,8 @@ public class GestorZorro : MonoBehaviour
 
     private void Mover(Vector3 velocidadHorizontal)
     {
-        velocidadHorizontal.y = zorroRigidbody.velocity.y;
-        zorroRigidbody.velocity = velocidadHorizontal;
+        velocidadHorizontal.y = zorroRigidbody.linearVelocity.y;
+        zorroRigidbody.linearVelocity = velocidadHorizontal;
         accionMovimiento = new Vector2(velocidadHorizontal.x, velocidadHorizontal.z);
         GestionarAccionMovimiento();
     }

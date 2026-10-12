@@ -155,7 +155,7 @@ public class GestorPatito : MonoBehaviour
         }
         mx = x - tx;
         my = y - ty;
-        patitoRigidbody.velocity = SeguirPendiente(new Vector3(-dx*velocidad, 0, -dy*velocidad));
+        patitoRigidbody.linearVelocity = SeguirPendiente(new Vector3(-dx*velocidad, 0, -dy*velocidad));
         giro = Mathf.Asin(my/(Mathf.Sqrt(mx*mx+my*my)+0.0000001f));
         if (mx > 0) {giro = Mathf.PI - giro;};
         gameObject.transform.localRotation = Quaternion.Euler(0,90+180*giro/Mathf.PI,0);
@@ -198,9 +198,9 @@ public class GestorPatito : MonoBehaviour
 
         if (EnSuelo())
         {
-            Vector3 velocidadActual = patitoRigidbody.velocity;
+            Vector3 velocidadActual = patitoRigidbody.linearVelocity;
             velocidadActual.y = PatoLocomocion.VelocidadSalto(alturaSalto);
-            patitoRigidbody.velocity = velocidadActual;
+            patitoRigidbody.linearVelocity = velocidadActual;
             finDespegue = Time.time + tiempoDespegue;
             SaltosRealizados++;
             saltoPendienteEn = -1;
@@ -232,7 +232,7 @@ public class GestorPatito : MonoBehaviour
         if (Time.time >= finDespegue && Physics.Raycast(origen, Vector3.down, out RaycastHit suelo, AlturaRayoPendiente + DistanciaPegarSuelo, capaTerreno))
             return Vector3.ProjectOnPlane(velocidadHorizontal, suelo.normal).normalized * velocidadHorizontal.magnitude;
 
-        velocidadHorizontal.y = patitoRigidbody.velocity.y;
+        velocidadHorizontal.y = patitoRigidbody.linearVelocity.y;
         return velocidadHorizontal;
     }
 
@@ -247,7 +247,7 @@ public class GestorPatito : MonoBehaviour
 
         patitoRigidbody.position = destino;
         transform.position = destino;
-        patitoRigidbody.velocity = Vector3.zero;
+        patitoRigidbody.linearVelocity = Vector3.zero;
         mejorDistancia = float.MaxValue;
         tiempoSinAcercarse = 0;
     }
