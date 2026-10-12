@@ -10,6 +10,7 @@ public class GestorAcciones : MonoBehaviour
     public float cantidadMovimiento;
     public float accionVertical;
     public float accionHorizontal;
+    public bool saltoPedido;
 
     private bool gamePaused;
 
@@ -34,6 +35,7 @@ public class GestorAcciones : MonoBehaviour
         {
             controles = new PatoControles();
             controles.PatoMovimiento.Movimiento.performed += OnMovimiento;
+            controles.PatoMovimiento.Salto.performed += OnSalto;
         }
         controles.Enable();
     }
@@ -46,11 +48,23 @@ public class GestorAcciones : MonoBehaviour
         if (controles == null)
             return;
         controles.PatoMovimiento.Movimiento.performed -= OnMovimiento;
+        controles.PatoMovimiento.Salto.performed -= OnSalto;
         controles.Dispose();
     }
     private void OnMovimiento(UnityEngine.InputSystem.InputAction.CallbackContext context)
     {
         accionMovimiento = context.ReadValue<Vector2>();
+    }
+    // Se pide en Update (input) y se consume en FixedUpdate (física)
+    private void OnSalto(UnityEngine.InputSystem.InputAction.CallbackContext context)
+    {
+        saltoPedido = true;
+    }
+    public bool ConsumirSalto()
+    {
+        bool pedido = saltoPedido;
+        saltoPedido = false;
+        return pedido;
     }
     private void GestionarAccionMovimiento()
     {
@@ -62,7 +76,6 @@ public class GestorAcciones : MonoBehaviour
     public void GestionarAcciones()
     {
         GestionarAccionMovimiento();
-        //GestorAccionSalto();
         //GestorPausa();
     }
 }

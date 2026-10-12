@@ -35,6 +35,15 @@ public partial class @PatoControles: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Salto"",
+                    ""type"": ""Button"",
+                    ""id"": ""c4b1e0a2-6d3f-4e8a-9b57-2f1d8e6a3c90"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -92,6 +101,17 @@ public partial class @PatoControles: IInputActionCollection2, IDisposable
                     ""action"": ""Movimiento"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""e7a9d2c1-3b4f-4a6e-8d15-9c0b7f2e4a68"",
+                    ""path"": ""<Keyboard>/space"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Salto"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -101,6 +121,7 @@ public partial class @PatoControles: IInputActionCollection2, IDisposable
         // PatoMovimiento
         m_PatoMovimiento = asset.FindActionMap("PatoMovimiento", throwIfNotFound: true);
         m_PatoMovimiento_Movimiento = m_PatoMovimiento.FindAction("Movimiento", throwIfNotFound: true);
+        m_PatoMovimiento_Salto = m_PatoMovimiento.FindAction("Salto", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -163,11 +184,13 @@ public partial class @PatoControles: IInputActionCollection2, IDisposable
     private readonly InputActionMap m_PatoMovimiento;
     private List<IPatoMovimientoActions> m_PatoMovimientoActionsCallbackInterfaces = new List<IPatoMovimientoActions>();
     private readonly InputAction m_PatoMovimiento_Movimiento;
+    private readonly InputAction m_PatoMovimiento_Salto;
     public struct PatoMovimientoActions
     {
         private @PatoControles m_Wrapper;
         public PatoMovimientoActions(@PatoControles wrapper) { m_Wrapper = wrapper; }
         public InputAction @Movimiento => m_Wrapper.m_PatoMovimiento_Movimiento;
+        public InputAction @Salto => m_Wrapper.m_PatoMovimiento_Salto;
         public InputActionMap Get() { return m_Wrapper.m_PatoMovimiento; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -180,6 +203,9 @@ public partial class @PatoControles: IInputActionCollection2, IDisposable
             @Movimiento.started += instance.OnMovimiento;
             @Movimiento.performed += instance.OnMovimiento;
             @Movimiento.canceled += instance.OnMovimiento;
+            @Salto.started += instance.OnSalto;
+            @Salto.performed += instance.OnSalto;
+            @Salto.canceled += instance.OnSalto;
         }
 
         private void UnregisterCallbacks(IPatoMovimientoActions instance)
@@ -187,6 +213,9 @@ public partial class @PatoControles: IInputActionCollection2, IDisposable
             @Movimiento.started -= instance.OnMovimiento;
             @Movimiento.performed -= instance.OnMovimiento;
             @Movimiento.canceled -= instance.OnMovimiento;
+            @Salto.started -= instance.OnSalto;
+            @Salto.performed -= instance.OnSalto;
+            @Salto.canceled -= instance.OnSalto;
         }
 
         public void RemoveCallbacks(IPatoMovimientoActions instance)
@@ -207,5 +236,6 @@ public partial class @PatoControles: IInputActionCollection2, IDisposable
     public interface IPatoMovimientoActions
     {
         void OnMovimiento(InputAction.CallbackContext context);
+        void OnSalto(InputAction.CallbackContext context);
     }
 }

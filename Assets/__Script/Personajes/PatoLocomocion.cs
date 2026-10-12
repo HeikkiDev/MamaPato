@@ -22,6 +22,14 @@ public class PatoLocomocion : MonoBehaviour
     public float distanciaPegarSuelo = 0.3f;
     const float AlturaRayoPendiente = 0.5f;
 
+    [Header("Salto (barra espaciadora)")]
+    public float alturaSalto = 1.2f;
+    [Tooltip("Tras saltar, durante este tiempo el movimiento no se pega a la pendiente (si no, anularía el impulso)")]
+    public float tiempoDespegue = 0.2f;
+    // Los patitos que siguen a mamá pato comparan este contador para saber que ha saltado
+    public int SaltosRealizados { get; private set; }
+    float finDespegue;
+
     public float velocidadMovimiento = 5;
     public float velocidadRotacion = 15;
     [Header("Semáforos de movimiento")]
@@ -43,7 +51,7 @@ public class PatoLocomocion : MonoBehaviour
 
         Vector3 velocidad;
         Vector3 origenRayo = transform.position + Vector3.up * AlturaRayoPendiente;
-        if (Physics.Raycast(origenRayo, Vector3.down, out RaycastHit suelo, AlturaRayoPendiente + distanciaPegarSuelo, terreno))
+        if (Time.time >= finDespegue && Physics.Raycast(origenRayo, Vector3.down, out RaycastHit suelo, AlturaRayoPendiente + distanciaPegarSuelo, terreno))
         {
             // Avanza paralela a la pendiente: sube y baja colinas a velocidad constante
             velocidad = Vector3.ProjectOnPlane(direccionMovimiento, suelo.normal).normalized * velocidadMovimiento;
@@ -74,12 +82,30 @@ public class PatoLocomocion : MonoBehaviour
     public void GestionarLocomocion()
     {   
         GestionarVuelo();
+        bool saltoPedido = gestorAcciones.ConsumirSalto();
         if (gestorPato.interactuando)
             return;
 
         GestionarMovimiento();
         GestionarRotacion();
+        if (saltoPedido)
+            GestionarSalto();
     }
+
+    private void GestionarSalto()
+    {
+        Vector3 origenRayo = transform.position + Vector3.up * AlturaRayoPendiente;
+        if (Time.time < finDespegue || !Physics.Raycast(origenRayo, Vector3.down, AlturaRayoPendiente + distanciaPegarSuelo, terreno))
+            return;
+
+        Vector3 velocidad = patoRigidbody.velocity;
+        velocidad.y = VelocidadSalto(alturaSalto);
+        patoRigidbody.velocity = velocidad;
+        finDespegue = Time.time + tiempoDespegue;
+        SaltosRealizados++;
+    }
+
+    public static float VelocidadSalto(float altura) => Mathf.Sqrt(2f * -Physics.gravity.y * altura);
     private void GestionarVuelo()
     {
         RaycastHit hit;
